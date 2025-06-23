@@ -4,6 +4,10 @@ Interactive quiz mini app for Farcaster with Base network integration.
 
 This is a [Vite](https://vitejs.dev) project bootstrapped with [`@farcaster/create-mini-app`](https://github.com/farcasterxyz/frames/tree/main/packages/create-mini-app).
 
+## Description
+
+QuizDrop is a decentralized quiz application built for the Farcaster ecosystem. Users can create, participate in, and earn rewards from interactive quizzes using Base network integration. The app provides a seamless social experience where users can challenge friends, track their performance, and earn cryptocurrency rewards for their knowledge.
+
 ## Features
 
 - 🎯 Interactive quiz experience

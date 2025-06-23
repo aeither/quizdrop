@@ -1,20 +1,20 @@
 {
-  "accountAssociation": {
-    "header": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9",
-    "payload": "eyJkb21haW4iOiJxdWl6ZHJvcC5hcHAiLCJ0aW1lc3RhbXAiOjE3MzQ5NDU2MDAsImZpZCI6MTIzNDU2fQ",
-    "signature": "placeholder_signature_will_be_generated_when_domain_is_ready"
-  },
   "frame": {
-    "version": "1",
     "name": "QuizDrop",
-    "iconUrl": "https://quizdrop.app/icon.png",
-    "homeUrl": "https://quizdrop.app",
-    "imageUrl": "https://quizdrop.app/quiz-preview.png",
-    "buttonTitle": "Start Quiz",
-    "splashImageUrl": "https://quizdrop.app/splash.png",
-    "splashBackgroundColor": "#667eea",
-    "webhookUrl": "https://quizdrop.app/api/webhook",
-    "requiredChains": ["eip155:8453"],
-    "requiredCapabilities": ["wallet.getEthereumProvider", "actions.signIn"]
+    "version": "1",
+    "iconUrl": "https://quizdrop.vercel.app/icon.png",
+    "homeUrl": "https://quizdrop.vercel.app",
+    "imageUrl": "https://quizdrop.vercel.app/image.png",
+    "splashImageUrl": "https://quizdrop.vercel.app/splash.png",
+    "splashBackgroundColor": "#6200EA",
+    "webhookUrl": "https://quizdrop.vercel.app/api/webhook",
+    "subtitle": "Interactive quiz mini app for Farcaster",
+    "description": "QuizDrop is a decentralized quiz application built for the Farcaster ecosystem. Users can create, participate in, and earn rewards from interactive quizzes using Base network integration. The app provides a seamless social experience where users can challenge friends, track their performance, and earn cryptocurrency rewards for their knowledge.",
+    "primaryCategory": "games"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjIxNjM4MywidHlwZSI6ImF1dGgiLCJrZXkiOiIweENhMDU3RDcxRWY1NDE5RDZDNzhlNTI3MTU2NUFDZEMwMzAxZjA0ODAifQ",
+    "payload": "eyJkb21haW4iOiJxdWl6ZHJvcC52ZXJjZWwuYXBwIn0",
+    "signature": "Uy+H2EVKBlVeWEk5x9AYnZdeAtzlpMfUSTvUDheCml4qxh2c9WTEPNQqgJUoYfBBcwdoKGi9N73mWH5gZn+xPRs="
   }
 }
