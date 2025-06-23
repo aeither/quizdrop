@@ -8,8 +8,8 @@
     "splashImageUrl": "https://quizdrop.vercel.app/splash.png",
     "splashBackgroundColor": "#6200EA",
     "webhookUrl": "https://quizdrop.vercel.app/api/webhook",
-    "subtitle": "Interactive quiz mini app for Farcaster",
-    "description": "QuizDrop is a decentralized quiz application built for the Farcaster ecosystem. Users can create, participate in, and earn rewards from interactive quizzes using Base network integration. The app provides a seamless social experience where users can challenge friends, track their performance, and earn cryptocurrency rewards for their knowledge.",
+    "subtitle": "Interactive quiz",
+    "description": "QuizDrop is a decentralized quiz application built for the Farcaster ecosystem.",
     "primaryCategory": "games"
   },
   "accountAssociation": {
