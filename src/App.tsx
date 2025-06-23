@@ -150,6 +150,12 @@ function AuthenticatedView({
   user,
   token,
 }: { user: { fid: number; displayName?: string; username?: string; pfpUrl?: string }; token: string | null }) {
+  const [isQuizActive, setIsQuizActive] = useState(false);
+
+  if (isQuizActive) {
+    return <QuizGame user={user} onExit={() => setIsQuizActive(false)} />;
+  }
+
   return (
     <div style={{ margin: "2rem 0", padding: "1rem", backgroundColor: "#f0f8ff", borderRadius: "8px" }}>
       <h3>Welcome, {user.displayName || user.username}!</h3>
@@ -173,7 +179,7 @@ function AuthenticatedView({
             fontSize: "1rem",
             cursor: "pointer",
           }}
-          onClick={() => alert("Quiz feature coming soon!")}
+          onClick={() => setIsQuizActive(true)}
         >
           Start Quiz 🚀
         </button>
@@ -229,6 +235,293 @@ function AuthenticationPrompt({
       >
         {isAuthenticating ? "Signing in..." : "Sign in with Farcaster"}
       </button>
+    </div>
+  );
+}
+
+interface Question {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+}
+
+const SAMPLE_QUESTIONS: Question[] = [
+  {
+    id: 1,
+    question: "What is the native token of the Base network?",
+    options: ["ETH", "BASE", "USD", "BTC"],
+    correctAnswer: 0,
+    explanation: "Base uses ETH as its native token, just like Ethereum mainnet.",
+  },
+  {
+    id: 2,
+    question: "Which company developed the Base blockchain?",
+    options: ["Meta", "Coinbase", "Google", "OpenSea"],
+    correctAnswer: 1,
+    explanation: "Base is an Ethereum Layer 2 blockchain developed by Coinbase.",
+  },
+  {
+    id: 3,
+    question: "What type of blockchain is Base?",
+    options: ["Layer 1", "Layer 2", "Sidechain", "Private"],
+    correctAnswer: 1,
+    explanation: "Base is a Layer 2 blockchain built on top of Ethereum using Optimism's OP Stack.",
+  },
+  {
+    id: 4,
+    question: "What is the purpose of Farcaster?",
+    options: ["DeFi protocol", "Social network", "NFT marketplace", "Gaming platform"],
+    correctAnswer: 1,
+    explanation: "Farcaster is a decentralized social network protocol built on Ethereum.",
+  },
+  {
+    id: 5,
+    question: "What does 'FID' stand for in Farcaster?",
+    options: ["Farcaster ID", "Frame ID", "Function ID", "File ID"],
+    correctAnswer: 0,
+    explanation: "FID stands for Farcaster ID, which is a unique identifier for each user on the network.",
+  },
+];
+
+function QuizGame({
+  onExit,
+}: {
+  user: { fid: number; displayName?: string; username?: string; pfpUrl?: string };
+  onExit: () => void;
+}) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [score, setScore] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+
+  const currentQuestion = SAMPLE_QUESTIONS[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === SAMPLE_QUESTIONS.length - 1;
+
+  const handleAnswerSelect = (answerIndex: number) => {
+    if (selectedAnswer !== null) return;
+
+    setSelectedAnswer(answerIndex);
+    setShowExplanation(true);
+
+    if (answerIndex === currentQuestion.correctAnswer) {
+      setScore(score + 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (isLastQuestion) {
+      setQuizCompleted(true);
+    } else {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+    }
+  };
+
+  const handleRestart = () => {
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setScore(0);
+    setQuizCompleted(false);
+  };
+
+  if (quizCompleted) {
+    const percentage = Math.round((score / SAMPLE_QUESTIONS.length) * 100);
+    return (
+      <div
+        style={{
+          margin: "2rem 0",
+          padding: "2rem",
+          backgroundColor: "#f0f8ff",
+          borderRadius: "8px",
+          textAlign: "center",
+        }}
+      >
+        <h2>🎉 Quiz Completed!</h2>
+        <div style={{ fontSize: "3rem", margin: "1rem 0" }}>
+          {percentage >= 80 ? "🏆" : percentage >= 60 ? "🥈" : "📚"}
+        </div>
+        <h3>
+          Your Score: {score}/{SAMPLE_QUESTIONS.length}
+        </h3>
+        <p style={{ fontSize: "1.2rem", marginBottom: "2rem" }}>
+          {percentage}% - {percentage >= 80 ? "Excellent!" : percentage >= 60 ? "Good job!" : "Keep learning!"}
+        </p>
+
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={handleRestart}
+            style={{
+              backgroundColor: "#667eea",
+              color: "white",
+              border: "none",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              cursor: "pointer",
+            }}
+          >
+            Play Again 🔄
+          </button>
+          <button
+            type="button"
+            onClick={onExit}
+            style={{
+              backgroundColor: "#6b7280",
+              color: "white",
+              border: "none",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              cursor: "pointer",
+            }}
+          >
+            Exit Quiz
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        margin: "2rem 0",
+        padding: "2rem",
+        backgroundColor: "#ffffff",
+        borderRadius: "8px",
+        border: "1px solid #e5e7eb",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <h3>
+          Question {currentQuestionIndex + 1} of {SAMPLE_QUESTIONS.length}
+        </h3>
+        <button
+          type="button"
+          onClick={onExit}
+          style={{
+            backgroundColor: "transparent",
+            border: "1px solid #d1d5db",
+            padding: "0.5rem 1rem",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+        >
+          Exit
+        </button>
+      </div>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <div
+          style={{
+            width: "100%",
+            height: "8px",
+            backgroundColor: "#e5e7eb",
+            borderRadius: "4px",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${((currentQuestionIndex + 1) / SAMPLE_QUESTIONS.length) * 100}%`,
+              height: "100%",
+              backgroundColor: "#667eea",
+              transition: "width 0.3s ease",
+            }}
+          />
+        </div>
+      </div>
+
+      <h2 style={{ marginBottom: "2rem", lineHeight: "1.4" }}>{currentQuestion.question}</h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        {currentQuestion.options.map((option, index) => {
+          let backgroundColor = "#f9fafb";
+          let borderColor = "#d1d5db";
+          let color = "#374151";
+
+          if (selectedAnswer !== null) {
+            if (index === currentQuestion.correctAnswer) {
+              backgroundColor = "#dcfce7";
+              borderColor = "#16a34a";
+              color = "#15803d";
+            } else if (index === selectedAnswer && selectedAnswer !== currentQuestion.correctAnswer) {
+              backgroundColor = "#fef2f2";
+              borderColor = "#dc2626";
+              color = "#dc2626";
+            }
+          }
+
+          return (
+            <button
+              key={`option-${currentQuestion.id}-${index}`}
+              type="button"
+              onClick={() => handleAnswerSelect(index)}
+              disabled={selectedAnswer !== null}
+              style={{
+                padding: "1rem",
+                border: `2px solid ${borderColor}`,
+                borderRadius: "8px",
+                backgroundColor,
+                color,
+                cursor: selectedAnswer !== null ? "default" : "pointer",
+                textAlign: "left",
+                fontSize: "1rem",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {String.fromCharCode(65 + index)}. {option}
+            </button>
+          );
+        })}
+      </div>
+
+      {showExplanation && (
+        <div
+          style={{
+            padding: "1rem",
+            backgroundColor: "#f0f9ff",
+            border: "1px solid #0ea5e9",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+          }}
+        >
+          <p style={{ margin: 0, color: "#0c4a6e" }}>
+            <strong>Explanation:</strong> {currentQuestion.explanation}
+          </p>
+        </div>
+      )}
+
+      {showExplanation && (
+        <div style={{ textAlign: "center" }}>
+          <button
+            type="button"
+            onClick={handleNext}
+            style={{
+              backgroundColor: "#667eea",
+              color: "white",
+              border: "none",
+              padding: "0.75rem 2rem",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              cursor: "pointer",
+            }}
+          >
+            {isLastQuestion ? "Finish Quiz" : "Next Question"} →
+          </button>
+        </div>
+      )}
+
+      <div style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", color: "#6b7280" }}>
+        Score: {score}/{currentQuestionIndex + (selectedAnswer !== null ? 1 : 0)}
+      </div>
     </div>
   );
 }
