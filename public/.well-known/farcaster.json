@@ -4,7 +4,7 @@
     "version": "1",
     "iconUrl": "https://quizdrop.vercel.app/icon.png",
     "homeUrl": "https://quizdrop.vercel.app",
-    "imageUrl": "https://quizdrop.vercel.app/image.png",
+    "imageUrl": "https://quizdrop.vercel.app/quiz-preview.jpeg",
     "splashImageUrl": "https://quizdrop.vercel.app/splash.png",
     "splashBackgroundColor": "#6200EA",
     "webhookUrl": "https://quizdrop.vercel.app/api/webhook",
