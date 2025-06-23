@@ -5,7 +5,7 @@
     "iconUrl": "https://quizdrop.vercel.app/icon.png",
     "homeUrl": "https://quizdrop.vercel.app",
     "imageUrl": "https://quizdrop.vercel.app/quiz-preview.jpeg",
-    "splashImageUrl": "https://quizdrop.vercel.app/splash.png",
+    "splashImageUrl": "https://quizdrop.vercel.app/splash.jpeg",
     "splashBackgroundColor": "#6200EA",
     "webhookUrl": "https://quizdrop.vercel.app/api/webhook",
     "subtitle": "Interactive quiz",
