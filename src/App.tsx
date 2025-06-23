@@ -106,9 +106,9 @@ function ConnectMenu() {
   if (isConnected) {
     return (
       <>
-        <div>Connected account:</div>
+        {/* <div>Connected account:</div>
         <div>{address}</div>
-        <SignButton />
+        <SignButton /> */}
       </>
     );
   }
