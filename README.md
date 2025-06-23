@@ -1,4 +1,35 @@
+# 🎯 QuizDrop
+
+Interactive quiz mini app for Farcaster with Base network integration.
+
 This is a [Vite](https://vitejs.dev) project bootstrapped with [`@farcaster/create-mini-app`](https://github.com/farcasterxyz/frames/tree/main/packages/create-mini-app).
+
+## Features
+
+- 🎯 Interactive quiz experience
+- 🔐 Farcaster authentication with Quick Auth
+- 💰 Base network integration for ETH wallet interactions
+- 📱 Mobile-optimized splash screen
+- 🚀 Ready for publishing as a Farcaster mini app
+
+## Getting Started
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+
+# Run linter
+pnpm lint
+```
 
 ## `farcaster.json`
 
