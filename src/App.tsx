@@ -107,7 +107,7 @@ function ConnectMenu() {
     return (
       <>
         <div>Connected account:</div>
-        {/* <div>{address}</div> */}
+        <div>{address}</div>
         <SignButton />
       </>
     );
@@ -151,7 +151,7 @@ function AuthenticatedView({
   const [isQuizActive, setIsQuizActive] = useState(false);
 
   if (isQuizActive) {
-    return <QuizGame user={user} onExit={() => setIsQuizActive(false)} />;
+    return <QuizGame onExit={() => setIsQuizActive(false)} user={user} />;
   }
 
   return (
