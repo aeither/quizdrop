@@ -287,6 +287,7 @@ const SAMPLE_QUESTIONS: Question[] = [
 
 function QuizGame({
   onExit,
+  user,
 }: {
   user: { fid: number; displayName?: string; username?: string; pfpUrl?: string };
   onExit: () => void;
@@ -388,140 +389,51 @@ function QuizGame({
     );
   }
 
+  const progressPercent = ((currentQuestionIndex + 1) / SAMPLE_QUESTIONS.length) * 100;
+
   return (
-    <div
-      style={{
-        margin: "2rem 0",
-        padding: "2rem",
-        backgroundColor: "#ffffff",
-        borderRadius: "8px",
-        border: "1px solid #e5e7eb",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <h3>
-          Question {currentQuestionIndex + 1} of {SAMPLE_QUESTIONS.length}
-        </h3>
-        <button
-          type="button"
-          onClick={onExit}
-          style={{
-            backgroundColor: "transparent",
-            border: "1px solid #d1d5db",
-            padding: "0.5rem 1rem",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "0.9rem",
-          }}
-        >
-          Exit
-        </button>
+    <div className="quiz-card">
+      <div className="quiz-progress">
+        <div className="quiz-progress-bar" style={{ width: `${progressPercent}%` }} />
       </div>
-
-      <div style={{ marginBottom: "1rem" }}>
-        <div
-          style={{
-            width: "100%",
-            height: "8px",
-            backgroundColor: "#e5e7eb",
-            borderRadius: "4px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${((currentQuestionIndex + 1) / SAMPLE_QUESTIONS.length) * 100}%`,
-              height: "100%",
-              backgroundColor: "#667eea",
-              transition: "width 0.3s ease",
-            }}
-          />
-        </div>
-      </div>
-
-      <h2 style={{ marginBottom: "2rem", lineHeight: "1.4" }}>{currentQuestion.question}</h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+      <div className="quiz-question">{currentQuestion.question}</div>
+      <div className="quiz-options">
         {currentQuestion.options.map((option, index) => {
-          let backgroundColor = "#f9fafb";
-          let borderColor = "#d1d5db";
-          let color = "#374151";
-
+          let btnClass = "quiz-option-btn";
           if (selectedAnswer !== null) {
-            if (index === currentQuestion.correctAnswer) {
-              backgroundColor = "#dcfce7";
-              borderColor = "#16a34a";
-              color = "#15803d";
-            } else if (index === selectedAnswer && selectedAnswer !== currentQuestion.correctAnswer) {
-              backgroundColor = "#fef2f2";
-              borderColor = "#dc2626";
-              color = "#dc2626";
-            }
-          }
-
+            if (index === currentQuestion.correctAnswer) btnClass += " correct";
+            else if (index === selectedAnswer) btnClass += " incorrect";
+          } else if (index === selectedAnswer) btnClass += " selected";
           return (
             <button
               key={`option-${currentQuestion.id}-${index}`}
               type="button"
+              className={btnClass}
               onClick={() => handleAnswerSelect(index)}
               disabled={selectedAnswer !== null}
-              style={{
-                padding: "1rem",
-                border: `2px solid ${borderColor}`,
-                borderRadius: "8px",
-                backgroundColor,
-                color,
-                cursor: selectedAnswer !== null ? "default" : "pointer",
-                textAlign: "left",
-                fontSize: "1rem",
-                transition: "all 0.2s ease",
-              }}
             >
-              {String.fromCharCode(65 + index)}. {option}
+              {option}
             </button>
           );
         })}
       </div>
-
-      {showExplanation && (
-        <div
-          style={{
-            padding: "1rem",
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #0ea5e9",
-            borderRadius: "8px",
-            marginBottom: "2rem",
-          }}
-        >
-          <p style={{ margin: 0, color: "#0c4a6e" }}>
-            <strong>Explanation:</strong> {currentQuestion.explanation}
-          </p>
-        </div>
-      )}
-
-      {showExplanation && (
-        <div style={{ textAlign: "center" }}>
-          <button
-            type="button"
-            onClick={handleNext}
-            style={{
-              backgroundColor: "#667eea",
-              color: "white",
-              border: "none",
-              padding: "0.75rem 2rem",
-              borderRadius: "8px",
-              fontSize: "1rem",
-              cursor: "pointer",
-            }}
-          >
-            {isLastQuestion ? "Finish Quiz" : "Next Question"} →
-          </button>
-        </div>
-      )}
-
-      <div style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", color: "#6b7280" }}>
-        Score: {score}/{currentQuestionIndex + (selectedAnswer !== null ? 1 : 0)}
+      <div className="quiz-slide-indicator">
+        {currentQuestionIndex + 1} of {SAMPLE_QUESTIONS.length} Slides
       </div>
+      {showExplanation && (
+        <div style={{ margin: '1.5rem 0', color: '#0c4a6e', background: '#f0f9ff', border: '1px solid #0ea5e9', borderRadius: '8px', padding: '1rem' }}>
+          <strong>Explanation:</strong> {currentQuestion.explanation}
+        </div>
+      )}
+      {showExplanation && (
+        <button
+          type="button"
+          className="quiz-submit-btn"
+          onClick={handleNext}
+        >
+          {isLastQuestion ? "Finish Quiz" : "Next Question"}
+        </button>
+      )}
     </div>
   );
 }
