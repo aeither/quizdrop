@@ -21,10 +21,8 @@ function App() {
       } catch (error) {
         console.error("Failed to initialize auth:", error);
       } finally {
-        setTimeout(() => {
-          setIsLoading(false);
-          sdk.actions.ready();
-        }, 1500);
+        setIsLoading(false);
+        sdk.actions.ready();
       }
     };
 
