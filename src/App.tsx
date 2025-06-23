@@ -107,7 +107,7 @@ function ConnectMenu() {
     return (
       <>
         <div>Connected account:</div>
-        <div>{address}</div>
+        {/* <div>{address}</div> */}
         <SignButton />
       </>
     );
