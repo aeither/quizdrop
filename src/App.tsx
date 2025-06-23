@@ -35,7 +35,7 @@ function App() {
 
   return (
     <>
-      <div style={{ padding: "1rem", textAlign: "center" }}>
+      <div style={{ textAlign: "center" }}>
         <h1>🎯 QuizDrop</h1>
         <p>Interactive Quiz Mini App</p>
         {user ? <AuthenticatedView user={user} token={authToken} /> : <AuthenticationPrompt onAuth={setUser} />}
