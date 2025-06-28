@@ -1,8 +1,9 @@
 import { sdk } from "@farcaster/frame-sdk";
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useSignMessage, useWalletClient, usePublicClient } from "wagmi";
-import { createPublicClient, http, Address } from "viem";
+import { createPublicClient, createWalletClient, http, Hex, Address, isAddress } from "viem";
 import { base } from "viem/chains";
+import { privateKeyToAccount } from "viem/accounts";
 import { setApiKey, createCoin, DeployCurrency } from '@zoralabs/coins-sdk';
 
 function App() {
@@ -37,14 +38,14 @@ function App() {
   }
 
   return (
-    <>
-      <div style={{ textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, textAlign: "center" }}>
         <h1>🎯 QuizDrop</h1>
         <p>Interactive Quiz Mini App</p>
         {user ? <AuthenticatedView user={user} token={authToken} /> : <AuthenticationPrompt onAuth={setUser} />}
       </div>
-      <ConnectMenu />
-    </>
+      {user && <ConnectMenu />}
+    </div>
   );
 }
 
@@ -108,43 +109,66 @@ function ConnectMenu() {
 
   if (isConnected) {
     return (
-      <>
-        <div>Connected account:</div>
-        <div>{address}</div>
-        <SignButton />
-      </>
+      <div style={{
+        position: "fixed",
+        bottom: "1rem",
+        right: "1rem",
+        background: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid #e5e7eb",
+        borderRadius: "12px",
+        padding: "0.75rem 1rem",
+        fontSize: "0.85rem",
+        color: "#6b7280",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        maxWidth: "250px",
+        wordBreak: "break-all"
+      }}>
+        <div style={{ fontWeight: "600", marginBottom: "0.25rem" }}>💳 Connected</div>
+        <div>{address?.substring(0, 6)}...{address?.substring(address.length - 4)}</div>
+      </div>
     );
   }
 
   return (
-    <button type="button" onClick={() => connect({ connector: connectors[0] })}>
-      Connect
-    </button>
+    <div style={{
+      position: "fixed",
+      bottom: "1rem",
+      right: "1rem",
+    }}>
+      <button 
+        type="button" 
+        onClick={() => connect({ connector: connectors[0] })}
+        style={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          border: "none",
+          borderRadius: "12px",
+          padding: "0.75rem 1.5rem",
+          fontSize: "1rem",
+          fontWeight: "600",
+          cursor: "pointer",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          transition: "transform 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 8px 12px -1px rgba(0, 0, 0, 0.15)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)";
+        }}
+      >
+        💳 Connect Wallet
+      </button>
+    </div>
   );
 }
 
 function SignButton() {
-  const { signMessage, isPending, data, error } = useSignMessage();
-
-  return (
-    <>
-      <button type="button" onClick={() => signMessage({ message: "hello world" })} disabled={isPending}>
-        {isPending ? "Signing..." : "Sign message"}
-      </button>
-      {data && (
-        <>
-          <div>Signature</div>
-          <div>{data}</div>
-        </>
-      )}
-      {error && (
-        <>
-          <div>Error</div>
-          <div>{error.message}</div>
-        </>
-      )}
-    </>
-  );
+  // Hidden component - keeping for potential future use
+  return null;
 }
 
 function AuthenticatedView({
@@ -271,14 +295,48 @@ function CreateQuizView({
   const [isCreating, setIsCreating] = useState(false);
   const [createResult, setCreateResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [redirectToQuiz, setRedirectToQuiz] = useState(false);
   
   const { address } = useAccount();
-  const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
+
+  // Redirect to quiz if user chooses to play
+  if (redirectToQuiz) {
+    return <QuizGame onExit={onBack} user={user} />;
+  }
+
+  // Check if we have the required environment variables
+  const hasRequiredEnvVars = () => {
+    const envVars = {
+      VITE_ZORA_API_KEY: import.meta.env.VITE_ZORA_API_KEY,
+      VITE_PRIVATE_KEY: import.meta.env.VITE_PRIVATE_KEY,
+      VITE_RPC_URL: import.meta.env.VITE_RPC_URL,
+      VITE_PAYOUT_RECIPIENT: import.meta.env.VITE_PAYOUT_RECIPIENT,
+    };
+    
+    // Debug logging
+    console.log('🔍 Environment variables check:', {
+      VITE_ZORA_API_KEY: envVars.VITE_ZORA_API_KEY ? 'SET' : 'MISSING',
+      VITE_PRIVATE_KEY: envVars.VITE_PRIVATE_KEY ? 'SET' : 'MISSING', 
+      VITE_RPC_URL: envVars.VITE_RPC_URL ? 'SET' : 'MISSING',
+      VITE_PAYOUT_RECIPIENT: envVars.VITE_PAYOUT_RECIPIENT ? 'SET' : 'MISSING',
+    });
+    
+    return !!(
+      envVars.VITE_ZORA_API_KEY &&
+      envVars.VITE_PRIVATE_KEY &&
+      envVars.VITE_RPC_URL &&
+      envVars.VITE_PAYOUT_RECIPIENT
+    );
+  };
 
   const handleCreateQuiz = async () => {
-    if (!quizName.trim() || !quizSymbol.trim() || !address || !walletClient) {
-      alert('Please fill in all fields and connect your wallet');
+    if (!quizName.trim() || !quizSymbol.trim()) {
+      alert('Please fill in quiz name and symbol');
+      return;
+    }
+
+    if (!hasRequiredEnvVars()) {
+      alert('Missing required environment variables. Please check your .env.local file.');
       return;
     }
 
@@ -287,47 +345,79 @@ function CreateQuizView({
     setError(null);
 
     try {
-      console.log('🪙 Creating quiz coin with real wallet client...');
+      console.log('🪙 Creating quiz coin with environment private key...');
       
-      // Check if we have required environment variables for Zora API
+      // Get environment variables
       const zoraApiKey = import.meta.env.VITE_ZORA_API_KEY;
-      if (!zoraApiKey) {
-        throw new Error('VITE_ZORA_API_KEY environment variable is required');
+      const privateKeyRaw = import.meta.env.VITE_PRIVATE_KEY;
+      const rpcUrl = import.meta.env.VITE_RPC_URL;
+      const payoutRecipient = import.meta.env.VITE_PAYOUT_RECIPIENT;
+
+      console.log('🔍 Environment values loaded:', {
+        zoraApiKey: zoraApiKey ? `${zoraApiKey.substring(0, 20)}...` : 'MISSING',
+        privateKeyRaw: privateKeyRaw ? `${privateKeyRaw.substring(0, 10)}...` : 'MISSING',
+        rpcUrl: rpcUrl || 'MISSING',
+        payoutRecipient: payoutRecipient || 'MISSING',
+      });
+
+      // Validate payout address format
+      if (!isAddress(payoutRecipient)) {
+        throw new Error('Invalid VITE_PAYOUT_RECIPIENT: Must be a valid Ethereum address');
       }
 
       // Set Zora API key
+      console.log('🔑 Setting Zora API key...');
       setApiKey(zoraApiKey);
 
-      // Create public client for Base network
-      const basePublicClient = createPublicClient({
+      // Ensure private key has 0x prefix
+      const privateKey = privateKeyRaw.startsWith('0x') 
+        ? privateKeyRaw as Hex
+        : (`0x${privateKeyRaw}` as Hex);
+
+      console.log('🔐 Creating account from private key...');
+      // Create account from private key
+      const account = privateKeyToAccount(privateKey);
+      console.log('✅ Account created:', account.address);
+
+      console.log('🌐 Creating blockchain clients...');
+      // Create clients
+      const publicClient = createPublicClient({
         chain: base,
-        transport: http(),
+        transport: http(rpcUrl),
       });
+
+      const walletClient = createWalletClient({
+        account,
+        chain: base,
+        transport: http(rpcUrl),
+      });
+      console.log('✅ Clients created successfully');
 
       // Define coin parameters
       const coinParams = {
         name: quizName,
         symbol: quizSymbol,
-        uri: description ? 
-             `data:text/plain;charset=utf-8,${encodeURIComponent(description)}` as const : 
-             "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as const,
-        payoutRecipient: address as Address,
+        uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as const,
+        payoutRecipient: payoutRecipient as Address,
         chainId: base.id,
         currency: DeployCurrency.ZORA,
       };
 
-      console.log('Creating coin with params:', {
+      console.log('🪙 Creating coin with params:', {
         name: coinParams.name,
         symbol: coinParams.symbol,
         payoutRecipient: coinParams.payoutRecipient,
         chainId: coinParams.chainId,
+        account: account.address,
+        uri: coinParams.uri.length > 50 ? `${coinParams.uri.substring(0, 50)}...` : coinParams.uri,
       });
 
       // Create the coin using Zora's SDK
+      console.log('🚀 Calling createCoin function...');
       const result = await createCoin(
         coinParams,
         walletClient,
-        basePublicClient,
+        publicClient,
         { gasMultiplier: 120 }
       );
 
@@ -339,7 +429,7 @@ function CreateQuizView({
         txHash: result.hash,
         name: quizName,
         symbol: quizSymbol,
-        creator: address,
+        creator: account.address,
         creatorFid: user.fid,
         deployment: result.deployment,
       };
@@ -367,10 +457,10 @@ function CreateQuizView({
       // Check for common error cases
       if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds to create coin. You need ETH for gas fees.';
-      } else if (error.message?.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected by user.';
-      } else if (error.message?.includes('VITE_ZORA_API_KEY')) {
-        errorMessage = 'Zora API key not configured. Set VITE_ZORA_API_KEY in your environment.';
+      } else if (error.message?.includes('Invalid VITE_PAYOUT_RECIPIENT')) {
+        errorMessage = 'Invalid payout recipient address in environment variables.';
+      } else if (error.message?.includes('private key')) {
+        errorMessage = 'Invalid private key in environment variables.';
       }
       
       setError(errorMessage);
@@ -401,7 +491,7 @@ function CreateQuizView({
             Deploying "{quizName}" ({quizSymbol}) to Base network...
           </p>
           <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#888" }}>
-            Please confirm the transaction in your wallet
+            Transaction is being processed on the blockchain
           </p>
         </div>
         
@@ -439,6 +529,11 @@ function CreateQuizView({
                 <strong>Transaction:</strong> {createResult.txHash}
               </p>
             )}
+            {createResult?.creator && (
+              <p style={{ fontSize: "0.9rem", wordBreak: "break-all" }}>
+                <strong>Creator:</strong> {createResult.creator}
+              </p>
+            )}
             <p style={{ fontSize: "0.9rem", color: "#666" }}>
               <strong>Network:</strong> Base
             </p>
@@ -449,6 +544,23 @@ function CreateQuizView({
           <button
             type="button"
             className="quiz-submit-btn"
+            onClick={() => setRedirectToQuiz(true)}
+          >
+            🎮 Play Your Quiz
+          </button>
+          
+          <button
+            type="button"
+            style={{
+              backgroundColor: "#6b7280",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              padding: "0.75rem 1.5rem",
+              fontSize: "1rem",
+              fontWeight: "600",
+              cursor: "pointer",
+            }}
             onClick={onBack}
           >
             Back to Home
@@ -507,19 +619,7 @@ function CreateQuizView({
         Create a coin for your quiz that players can earn by participating
       </p>
       
-      {!address && (
-        <div style={{ 
-          marginBottom: "2rem", 
-          padding: "1rem", 
-          backgroundColor: "#fff3cd", 
-          borderRadius: "8px",
-          border: "1px solid #ffc107"
-        }}>
-          <strong>⚠️ Wallet Required:</strong> Please connect your wallet to create a quiz coin.
-        </div>
-      )}
-      
-      {!import.meta.env.VITE_ZORA_API_KEY && (
+      {!hasRequiredEnvVars() && (
         <div style={{ 
           marginBottom: "2rem", 
           padding: "1rem", 
@@ -527,7 +627,13 @@ function CreateQuizView({
           borderRadius: "8px",
           border: "1px solid #f56565"
         }}>
-          <strong>⚠️ Configuration Required:</strong> Set <code>VITE_ZORA_API_KEY</code> environment variable to enable real coin creation.
+          <strong>⚠️ Configuration Required:</strong> Set environment variables in <code>.env.local</code>:
+          <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem", fontSize: "0.9rem" }}>
+            <li><code>VITE_ZORA_API_KEY</code></li>
+            <li><code>VITE_PRIVATE_KEY</code></li>
+            <li><code>VITE_RPC_URL</code></li>
+            <li><code>VITE_PAYOUT_RECIPIENT</code></li>
+          </ul>
         </div>
       )}
       
@@ -614,7 +720,7 @@ function CreateQuizView({
           type="button"
           className="quiz-submit-btn"
           onClick={handleCreateQuiz}
-          disabled={isCreating || !quizName.trim() || !quizSymbol.trim() || !address || !walletClient}
+          disabled={isCreating || !quizName.trim() || !quizSymbol.trim() || !hasRequiredEnvVars()}
         >
           {isCreating ? 'Creating...' : 'Create Quiz Coin 🪙'}
         </button>
@@ -624,7 +730,8 @@ function CreateQuizView({
         <strong>💡 Real Coin Creation:</strong>
         <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
           <li>Creates an actual ERC-20 coin on Base network</li>
-          <li>Requires ETH for gas fees (~$1-3)</li>
+          <li>Uses your configured private key for transactions</li>
+          <li>Requires ETH in the configured wallet for gas fees (~$1-3)</li>
           <li>Players can earn and trade your coin</li>
           <li>You earn from trading fees as the creator</li>
           <li>Coin will appear in wallets and DEXs</li>

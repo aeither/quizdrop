@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import { getProfileBalances } from '@zoralabs/coins-sdk';
 import { isAddress } from 'viem';
+import { setApiKey } from '@zoralabs/coins-sdk';
+
+// Set API key if available (optional for profile queries)
+if (process.env.VITE_ZORA_API_KEY) {
+  setApiKey(process.env.VITE_ZORA_API_KEY);
+}
 
 // Get wallet address from command line
 const walletAddress = process.argv[2];

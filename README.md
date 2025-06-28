@@ -40,17 +40,14 @@ QuizDrop is a decentralized quiz application built for the Farcaster ecosystem. 
 
 3. **For coin creation (optional):**
    ```bash
-   # Copy example environment file
-   cp .env.example .env
+   # Create .env.local for all coin creation functionality:
+   echo "VITE_ZORA_API_KEY=your_zora_api_key" > .env.local
+   echo "VITE_PRIVATE_KEY=your_private_key_without_0x" >> .env.local
+   echo "VITE_RPC_URL=https://base-sepolia.g.alchemy.com/v2/your-key" >> .env.local
+   echo "VITE_PAYOUT_RECIPIENT=0xYourEthereumAddress" >> .env.local
    
-   # Edit .env with your actual values:
-   # ZORA_API_KEY=your_zora_api_key
-   # PRIVATE_KEY=your_private_key_without_0x
-   # RPC_URL=https://base-sepolia.g.alchemy.com/v2/your-key
-   # PAYOUT_RECIPIENT=0xYourEthereumAddress
-   
-   # For frontend coin creation, also add to .env.local:
-   # VITE_ZORA_API_KEY=your_zora_api_key
+   # Copy to .env for backend scripts (they read the same variables):
+   cp .env.local .env
    ```
 
 ## Coin Creation Scripts
@@ -67,16 +64,14 @@ pnpm get-coins <wallet_address>
 
 ## Environment Variables
 
-For production coin creation, you'll need:
+For coin creation functionality, you'll need these variables in both `.env.local` (frontend) and `.env` (scripts):
 
-**Backend Scripts (.env):**
-- `ZORA_API_KEY`: Get from [Zora](https://zora.co/)
-- `PRIVATE_KEY`: Your wallet's private key (without 0x prefix)
-- `RPC_URL`: Base network RPC endpoint
-- `PAYOUT_RECIPIENT`: Address to receive creator fees
+- `VITE_ZORA_API_KEY`: Get from [Zora](https://zora.co/)
+- `VITE_PRIVATE_KEY`: Your wallet's private key (without 0x prefix)
+- `VITE_RPC_URL`: Base network RPC endpoint
+- `VITE_PAYOUT_RECIPIENT`: Address to receive creator fees
 
-**Frontend Coin Creation (.env.local):**
-- `VITE_ZORA_API_KEY`: Same Zora API key for frontend use
+**Note**: Both frontend and backend scripts now use the same `VITE_` prefixed variables for consistency.
 
 ## Development vs Production
 
