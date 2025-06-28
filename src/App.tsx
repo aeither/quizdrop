@@ -1,6 +1,9 @@
 import { sdk } from "@farcaster/frame-sdk";
 import { useEffect, useState } from "react";
-import { useAccount, useConnect, useSignMessage } from "wagmi";
+import { useAccount, useConnect, useSignMessage, useWalletClient, usePublicClient } from "wagmi";
+import { createPublicClient, http, Address } from "viem";
+import { base } from "viem/chains";
+import { setApiKey, createCoin, DeployCurrency } from '@zoralabs/coins-sdk';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -106,9 +109,9 @@ function ConnectMenu() {
   if (isConnected) {
     return (
       <>
-        {/* <div>Connected account:</div>
+        <div>Connected account:</div>
         <div>{address}</div>
-        <SignButton /> */}
+        <SignButton />
       </>
     );
   }
@@ -148,10 +151,30 @@ function AuthenticatedView({
   user,
   token,
 }: { user: { fid: number; displayName?: string; username?: string; pfpUrl?: string }; token: string | null }) {
-  const [isQuizActive, setIsQuizActive] = useState(false);
+  const [activeView, setActiveView] = useState<'home' | 'quiz' | 'create'>('home');
+  const [createdQuizzes, setCreatedQuizzes] = useState<Array<{
+    id: string;
+    name: string;
+    coinAddress: string;
+    txHash: string;
+    created: number;
+  }>>([]);
 
-  if (isQuizActive) {
-    return <QuizGame onExit={() => setIsQuizActive(false)} user={user} />;
+  if (activeView === 'quiz') {
+    return <QuizGame onExit={() => setActiveView('home')} user={user} />;
+  }
+
+  if (activeView === 'create') {
+    return (
+      <CreateQuizView 
+        user={user} 
+        onBack={() => setActiveView('home')}
+        onQuizCreated={(quiz) => {
+          setCreatedQuizzes(prev => [...prev, quiz]);
+          setActiveView('home');
+        }}
+      />
+    );
   }
 
   return (
@@ -165,7 +188,8 @@ function AuthenticatedView({
           style={{ width: "64px", height: "64px", borderRadius: "50%", margin: "1rem 0" }}
         />
       )}
-      <div style={{ marginTop: "1rem" }}>
+      
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap", marginTop: "1rem" }}>
         <button
           type="button"
           style={{
@@ -177,12 +201,435 @@ function AuthenticatedView({
             fontSize: "1rem",
             cursor: "pointer",
           }}
-          onClick={() => setIsQuizActive(true)}
+          onClick={() => setActiveView('quiz')}
         >
-          Start Quiz 🚀
+          Take Sample Quiz 🚀
+        </button>
+        
+        <button
+          type="button"
+          style={{
+            backgroundColor: "#22c55e",
+            color: "white",
+            border: "none",
+            padding: "0.75rem 1.5rem",
+            borderRadius: "8px",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
+          onClick={() => setActiveView('create')}
+        >
+          Create New Quiz 🪙
         </button>
       </div>
+
+      {createdQuizzes.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h4>Your Created Quizzes</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {createdQuizzes.map((quiz) => (
+              <div 
+                key={quiz.id}
+                style={{
+                  padding: "0.75rem",
+                  backgroundColor: "#e0f2fe",
+                  borderRadius: "6px",
+                  border: "1px solid #0891b2",
+                }}
+              >
+                <div style={{ fontWeight: "bold" }}>{quiz.name}</div>
+                <div style={{ fontSize: "0.9rem", color: "#666" }}>
+                  Coin: {quiz.coinAddress.substring(0, 10)}...
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#888" }}>
+                  Created: {new Date(quiz.created).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {token && <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "1rem" }}>Authenticated ✅</p>}
+    </div>
+  );
+}
+
+function CreateQuizView({
+  user,
+  onBack,
+  onQuizCreated,
+}: {
+  user: { fid: number; displayName?: string; username?: string; pfpUrl?: string };
+  onBack: () => void;
+  onQuizCreated: (quiz: any) => void;
+}) {
+  const [step, setStep] = useState<'form' | 'creating' | 'success'>('form');
+  const [quizName, setQuizName] = useState('');
+  const [quizSymbol, setQuizSymbol] = useState('');
+  const [description, setDescription] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createResult, setCreateResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+
+  const handleCreateQuiz = async () => {
+    if (!quizName.trim() || !quizSymbol.trim() || !address || !walletClient) {
+      alert('Please fill in all fields and connect your wallet');
+      return;
+    }
+
+    setIsCreating(true);
+    setStep('creating');
+    setError(null);
+
+    try {
+      console.log('🪙 Creating quiz coin with real wallet client...');
+      
+      // Check if we have required environment variables for Zora API
+      const zoraApiKey = import.meta.env.VITE_ZORA_API_KEY;
+      if (!zoraApiKey) {
+        throw new Error('VITE_ZORA_API_KEY environment variable is required');
+      }
+
+      // Set Zora API key
+      setApiKey(zoraApiKey);
+
+      // Create public client for Base network
+      const basePublicClient = createPublicClient({
+        chain: base,
+        transport: http(),
+      });
+
+      // Define coin parameters
+      const coinParams = {
+        name: quizName,
+        symbol: quizSymbol,
+        uri: description ? 
+             `data:text/plain;charset=utf-8,${encodeURIComponent(description)}` as const : 
+             "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as const,
+        payoutRecipient: address as Address,
+        chainId: base.id,
+        currency: DeployCurrency.ZORA,
+      };
+
+      console.log('Creating coin with params:', {
+        name: coinParams.name,
+        symbol: coinParams.symbol,
+        payoutRecipient: coinParams.payoutRecipient,
+        chainId: coinParams.chainId,
+      });
+
+      // Create the coin using Zora's SDK
+      const result = await createCoin(
+        coinParams,
+        walletClient,
+        basePublicClient,
+        { gasMultiplier: 120 }
+      );
+
+      console.log('✅ Coin created successfully!', result);
+
+      const successResult = {
+        success: true,
+        coinAddress: result.address,
+        txHash: result.hash,
+        name: quizName,
+        symbol: quizSymbol,
+        creator: address,
+        creatorFid: user.fid,
+        deployment: result.deployment,
+      };
+      
+      setCreateResult(successResult);
+      setStep('success');
+      
+      // Add to created quizzes
+      onQuizCreated({
+        id: result.address,
+        name: quizName,
+        coinAddress: result.address,
+        txHash: result.hash,
+        created: Date.now(),
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error creating quiz coin:', error);
+      
+      let errorMessage = 'Failed to create quiz coin';
+      if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      // Check for common error cases
+      if (error.message?.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds to create coin. You need ETH for gas fees.';
+      } else if (error.message?.includes('user rejected')) {
+        errorMessage = 'Transaction was rejected by user.';
+      } else if (error.message?.includes('VITE_ZORA_API_KEY')) {
+        errorMessage = 'Zora API key not configured. Set VITE_ZORA_API_KEY in your environment.';
+      }
+      
+      setError(errorMessage);
+      alert(errorMessage);
+      setStep('form');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  if (step === 'creating') {
+    return (
+      <div className="quiz-card">
+        <h2>🪙 Creating Quiz Coin...</h2>
+        <div style={{ margin: "2rem 0", textAlign: "center" }}>
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid #e6e6e6",
+              borderTop: "3px solid #4ade80",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto",
+            }}
+          />
+          <p style={{ marginTop: "1rem", color: "#666" }}>
+            Deploying "{quizName}" ({quizSymbol}) to Base network...
+          </p>
+          <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#888" }}>
+            Please confirm the transaction in your wallet
+          </p>
+        </div>
+        
+        {error && (
+          <div style={{ 
+            marginTop: "1rem", 
+            padding: "1rem", 
+            backgroundColor: "#fee", 
+            borderRadius: "8px",
+            color: "#c53030",
+            fontSize: "0.9rem"
+          }}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (step === 'success') {
+    return (
+      <div className="quiz-card">
+        <h2>🎉 Quiz Coin Created!</h2>
+        <div style={{ margin: "2rem 0" }}>
+          <div style={{ padding: "1rem", backgroundColor: "#f0f9ff", borderRadius: "8px", marginBottom: "1rem" }}>
+            <h4>{quizName}</h4>
+            <p><strong>Symbol:</strong> {quizSymbol}</p>
+            {createResult?.coinAddress && (
+              <p style={{ fontSize: "0.9rem", wordBreak: "break-all" }}>
+                <strong>Coin Address:</strong> {createResult.coinAddress}
+              </p>
+            )}
+            {createResult?.txHash && (
+              <p style={{ fontSize: "0.9rem", wordBreak: "break-all" }}>
+                <strong>Transaction:</strong> {createResult.txHash}
+              </p>
+            )}
+            <p style={{ fontSize: "0.9rem", color: "#666" }}>
+              <strong>Network:</strong> Base
+            </p>
+          </div>
+        </div>
+        
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="quiz-submit-btn"
+            onClick={onBack}
+          >
+            Back to Home
+          </button>
+          
+          {createResult?.txHash && (
+            <button
+              type="button"
+              style={{
+                backgroundColor: "#8b5cf6",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                window.open(`https://basescan.org/tx/${createResult.txHash}`, '_blank');
+              }}
+            >
+              View on BaseScan 🔍
+            </button>
+          )}
+          
+          {createResult?.coinAddress && (
+            <button
+              type="button"
+              style={{
+                backgroundColor: "#0891b2",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                window.open(`https://basescan.org/address/${createResult.coinAddress}`, '_blank');
+              }}
+            >
+              View Coin Contract 📄
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="quiz-card">
+      <h2>🪙 Create New Quiz</h2>
+      <p style={{ marginBottom: "2rem", color: "#666" }}>
+        Create a coin for your quiz that players can earn by participating
+      </p>
+      
+      {!address && (
+        <div style={{ 
+          marginBottom: "2rem", 
+          padding: "1rem", 
+          backgroundColor: "#fff3cd", 
+          borderRadius: "8px",
+          border: "1px solid #ffc107"
+        }}>
+          <strong>⚠️ Wallet Required:</strong> Please connect your wallet to create a quiz coin.
+        </div>
+      )}
+      
+      {!import.meta.env.VITE_ZORA_API_KEY && (
+        <div style={{ 
+          marginBottom: "2rem", 
+          padding: "1rem", 
+          backgroundColor: "#fee", 
+          borderRadius: "8px",
+          border: "1px solid #f56565"
+        }}>
+          <strong>⚠️ Configuration Required:</strong> Set <code>VITE_ZORA_API_KEY</code> environment variable to enable real coin creation.
+        </div>
+      )}
+      
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Quiz Name *
+          </label>
+          <input
+            type="text"
+            value={quizName}
+            onChange={(e) => setQuizName(e.target.value)}
+            placeholder="e.g., Crypto Knowledge Quiz"
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              border: "2px solid #ffd18c",
+              borderRadius: "8px",
+              fontSize: "1rem",
+            }}
+          />
+        </div>
+        
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Coin Symbol * (2-5 characters)
+          </label>
+          <input
+            type="text"
+            value={quizSymbol}
+            onChange={(e) => setQuizSymbol(e.target.value.toUpperCase())}
+            placeholder="e.g., CRYPTO"
+            maxLength={5}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              border: "2px solid #ffd18c",
+              borderRadius: "8px",
+              fontSize: "1rem",
+            }}
+          />
+        </div>
+        
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your quiz..."
+            rows={3}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              border: "2px solid #ffd18c",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              resize: "vertical",
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+        <button
+          type="button"
+          style={{
+            backgroundColor: "#6b7280",
+            color: "white",
+            border: "none",
+            borderRadius: "12px",
+            padding: "0.75rem 2rem",
+            fontSize: "1.1rem",
+            fontWeight: "600",
+            cursor: "pointer",
+          }}
+          onClick={onBack}
+        >
+          Cancel
+        </button>
+        
+        <button
+          type="button"
+          className="quiz-submit-btn"
+          onClick={handleCreateQuiz}
+          disabled={isCreating || !quizName.trim() || !quizSymbol.trim() || !address || !walletClient}
+        >
+          {isCreating ? 'Creating...' : 'Create Quiz Coin 🪙'}
+        </button>
+      </div>
+      
+      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f0f9ff", borderRadius: "8px", fontSize: "0.9rem" }}>
+        <strong>💡 Real Coin Creation:</strong>
+        <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
+          <li>Creates an actual ERC-20 coin on Base network</li>
+          <li>Requires ETH for gas fees (~$1-3)</li>
+          <li>Players can earn and trade your coin</li>
+          <li>You earn from trading fees as the creator</li>
+          <li>Coin will appear in wallets and DEXs</li>
+        </ul>
+      </div>
     </div>
   );
 }

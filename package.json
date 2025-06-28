@@ -6,9 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "ngrok": "ngrok http --domain=basically-enough-clam.ngrok-free.app 5174",
     "build": "tsc && vite build",
     "lint": "biome check src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "create-coin": "tsx scripts/create-coin.ts",
+    "get-coins": "tsx scripts/profile-queries.ts"
   },
   "dependencies": {
     "@farcaster/frame-sdk": "latest",
@@ -18,6 +21,7 @@
     "dotenv": "^17.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tsx": "^4.7.0",
     "viem": "^2.31.3",
     "wagmi": "latest"
   },
