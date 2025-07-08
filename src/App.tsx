@@ -1,10 +1,10 @@
 import { sdk } from "@farcaster/frame-sdk";
-import { DeployCurrency, createCoin, setApiKey } from '@zoralabs/coins-sdk';
+import { DeployCurrency, createCoin, setApiKey, tradeCoin, type TradeParameters } from '@zoralabs/coins-sdk';
 import { useEffect, useState } from "react";
-import { type Address, type Hex, createPublicClient, createWalletClient, http, isAddress } from "viem";
+import { type Address, type Hex, createPublicClient, createWalletClient, http, isAddress, parseEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount, useConnect, usePublicClient, useWalletClient } from "wagmi";
 import { getAllQuizzes, getQuizzesByCreatorFid, createQuiz, type CreateQuizInput } from "./db/mock-operations";
 
 function App() {
@@ -1143,10 +1143,12 @@ function TradingView({
   const [, setTradeResult] = useState<{ transactionHash: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
 
   const handleTrade = async () => {
-    if (!quiz || !address || !ethAmount) {
+    if (!quiz || !address || !ethAmount || !isConnected || !walletClient || !publicClient) {
       alert('Please connect wallet and enter amount');
       return;
     }
@@ -1155,23 +1157,39 @@ function TradingView({
     setError(null);
 
     try {
-      const privateKey = import.meta.env.VITE_PRIVATE_KEY;
-      const rpcUrl = import.meta.env.VITE_RPC_URL;
-      
-      if (!privateKey || !rpcUrl) {
-        throw new Error('Missing environment variables');
+      // Set Zora API key if not already set
+      const zoraApiKey = import.meta.env.VITE_ZORA_API_KEY;
+      if (zoraApiKey) {
+        setApiKey(zoraApiKey);
       }
-
-      // For now, show a placeholder for trading functionality
-      // In production, you would integrate with a DEX like Uniswap or use Zora's trading SDK
-      const result = {
-        transactionHash: `0x${Math.random().toString(16).substring(2, 10)}`,
-      };
       
-      // Simulate a delay for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Convert amount to wei
+      const amountInWei = parseEther(ethAmount);
+      
+      // Create trade parameters
+      const tradeParameters: TradeParameters = {
+        sell: tradeType === 'buy' ? { type: "eth" } : { type: "erc20", address: quiz.coinAddress as Address },
+        buy: tradeType === 'buy' ? { type: "erc20", address: quiz.coinAddress as Address } : { type: "eth" },
+        amountIn: amountInWei,
+        slippage: 0.05, // 5% slippage tolerance
+        sender: address,
+      };
 
-      setTradeResult(result);
+      console.log('Trading with parameters:', tradeParameters);
+
+      // Execute the trade
+      if (!walletClient.account) {
+        throw new Error('No account found in wallet client');
+      }
+      
+      const result = await tradeCoin({
+        tradeParameters,
+        walletClient,
+        account: walletClient.account,
+        publicClient,
+      });
+
+      setTradeResult({ transactionHash: result.transactionHash });
       alert(`Trade successful! Transaction: ${result.transactionHash}`);
     } catch (error: unknown) {
       console.error('Trade failed:', error);
@@ -1294,28 +1312,30 @@ function TradingView({
         <button
           type="button"
           onClick={handleTrade}
-          disabled={isTrading || !ethAmount || !address}
+          disabled={isTrading || !ethAmount || !isConnected || !walletClient}
           style={{
-            backgroundColor: isTrading ? "#ccc" : (tradeType === 'buy' ? "#22c55e" : "#ef4444"),
+            backgroundColor: isTrading || !isConnected || !walletClient ? "#ccc" : (tradeType === 'buy' ? "#22c55e" : "#ef4444"),
             color: "white",
             border: "none",
             borderRadius: "12px",
             padding: "0.75rem 2rem",
             fontSize: "1rem",
-            cursor: isTrading || !ethAmount || !address ? "not-allowed" : "pointer",
+            cursor: isTrading || !ethAmount || !isConnected || !walletClient ? "not-allowed" : "pointer",
           }}
         >
-          {isTrading ? 'Trading...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quiz.symbol}`}
+          {isTrading ? 'Trading...' : !isConnected ? 'Connect Wallet' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quiz.symbol}`}
         </button>
       </div>
 
       <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f0f9ff", borderRadius: "8px", fontSize: "0.9rem" }}>
         <strong>💡 Trading Info:</strong>
         <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-          <li>Trade directly on Base network</li>
+          <li>Trade directly on Base mainnet using Zora's Coins SDK</li>
           <li>5% slippage tolerance included</li>
-          <li>Requires connected wallet with ETH for gas</li>
-          <li>Uses permit signatures for secure trading</li>
+          <li>Requires connected wallet with ETH for gas fees</li>
+          <li>Uses permit signatures for secure, gasless approvals</li>
+          <li>Supports ETH ↔ Creator Coin swaps</li>
+          <li>Make sure you have enough ETH for the trade amount + gas</li>
         </ul>
       </div>
     </div>

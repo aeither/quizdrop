@@ -17,7 +17,6 @@ import {
     Position,
     V4Planner,
     V4PositionManager,
-    nearestUsableTick
 } from '@uniswap/v4-sdk';
 import { DeployCurrency, createCoin, setApiKey } from '@zoralabs/coins-sdk';
 import 'dotenv/config';
@@ -31,6 +30,12 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
+
+function nearestUsableTick(tick: number, tickSpacing: number): number {
+    const rounded = Math.round(tick / tickSpacing) * tickSpacing;
+    // Clamp to min/max tick if needed, based on your context
+    return rounded;
+}
 
 // Contract addresses (Base network)
 const CONTRACTS = {
@@ -552,10 +557,3 @@ export async function demonstrateFullWorkflow() {
     throw error;
   }
 }
-
-// Export all functions for use in other parts of the app
-export {
-    createInitialLiquidity, executeSwap, getPoolInfo,
-    getSwapQuote, mintLiquidityPosition, setupClients, swapETHForQuizCoin,
-    swapQuizCoinForETH
-};
