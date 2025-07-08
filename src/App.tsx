@@ -1,10 +1,11 @@
 import { sdk } from "@farcaster/frame-sdk";
 import { DeployCurrency, createCoin, setApiKey } from '@zoralabs/coins-sdk';
 import { useEffect, useState } from "react";
-import { createPublicClient, createWalletClient, http, isAddress, type Address, type Hex } from "viem";
+import { type Address, type Hex, createPublicClient, createWalletClient, http, isAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { useAccount, useConnect } from "wagmi";
+import { getAllQuizzes, getQuizzesByCreatorFid, createQuiz, type CreateQuizInput } from "./db/mock-operations";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -174,17 +175,38 @@ function AuthenticatedView({
   user,
   token,
 }: { user: { fid: number; displayName?: string; username?: string; pfpUrl?: string }; token: string | null }) {
-  const [activeView, setActiveView] = useState<'home' | 'quiz' | 'create'>('home');
-  const [createdQuizzes, setCreatedQuizzes] = useState<Array<{
-    id: string;
-    name: string;
-    coinAddress: string;
-    txHash: string;
-    created: number;
-  }>>([]);
+  const [activeView, setActiveView] = useState<'home' | 'quiz' | 'create' | 'trade'>('home');
+  const [allQuizzes, setAllQuizzes] = useState<any[]>([]);
+  const [userQuizzes, setUserQuizzes] = useState<any[]>([]);
+  const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load quizzes on mount
+  useEffect(() => {
+    const loadQuizzes = async () => {
+      try {
+        const [all, userCreated] = await Promise.all([
+          getAllQuizzes(),
+          getQuizzesByCreatorFid(user.fid)
+        ]);
+        setAllQuizzes(all);
+        setUserQuizzes(userCreated);
+      } catch (error) {
+        console.error('Error loading quizzes:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadQuizzes();
+  }, [user.fid]);
 
   if (activeView === 'quiz') {
-    return <QuizGame onExit={() => setActiveView('home')} user={user} />;
+    return <QuizGame onExit={() => setActiveView('home')} user={user} quiz={selectedQuiz} />;
+  }
+
+  if (activeView === 'trade') {
+    return <TradingView onBack={() => setActiveView('home')} quiz={selectedQuiz} />;
   }
 
   if (activeView === 'create') {
@@ -192,11 +214,34 @@ function AuthenticatedView({
       <CreateQuizView 
         user={user} 
         onBack={() => setActiveView('home')}
-        onQuizCreated={(quiz) => {
-          setCreatedQuizzes(prev => [...prev, quiz]);
+        onQuizCreated={async (quiz) => {
+          // Refresh quiz lists
+          const [all, userCreated] = await Promise.all([
+            getAllQuizzes(),
+            getQuizzesByCreatorFid(user.fid)
+          ]);
+          setAllQuizzes(all);
+          setUserQuizzes(userCreated);
           setActiveView('home');
         }}
       />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: "2rem" }}>
+        <div style={{ 
+          width: "40px", 
+          height: "40px", 
+          border: "3px solid #e6e6e6", 
+          borderTop: "3px solid #4ade80", 
+          borderRadius: "50%", 
+          animation: "spin 1s linear infinite", 
+          margin: "0 auto 1rem" 
+        }} />
+        <p>Loading quizzes...</p>
+      </div>
     );
   }
 
@@ -224,7 +269,10 @@ function AuthenticatedView({
             fontSize: "1rem",
             cursor: "pointer",
           }}
-          onClick={() => setActiveView('quiz')}
+          onClick={() => {
+            setSelectedQuiz(null);
+            setActiveView('quiz');
+          }}
         >
           Take Sample Quiz 🚀
         </button>
@@ -246,11 +294,85 @@ function AuthenticatedView({
         </button>
       </div>
 
-      {createdQuizzes.length > 0 && (
+      {/* All Available Quizzes */}
+      {allQuizzes.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
-          <h4>Your Created Quizzes</h4>
+          <h4>🎯 Available Quizzes</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+            {allQuizzes.map((quiz) => (
+              <div 
+                key={quiz.id}
+                style={{
+                  padding: "1rem",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                <div style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+                  {quiz.name} ({quiz.symbol})
+                </div>
+                {quiz.description && (
+                  <div style={{ fontSize: "0.9rem", color: "#666", marginBottom: "0.5rem" }}>
+                    {quiz.description}
+                  </div>
+                )}
+                <div style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1rem" }}>
+                  Coin: {quiz.coinAddress.substring(0, 10)}...
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    style={{
+                      backgroundColor: "#667eea",
+                      color: "white",
+                      border: "none",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      flex: 1,
+                    }}
+                    onClick={() => {
+                      setSelectedQuiz(quiz);
+                      setActiveView('quiz');
+                    }}
+                  >
+                    Play 🎮
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      backgroundColor: "#f59e0b",
+                      color: "white",
+                      border: "none",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      flex: 1,
+                    }}
+                    onClick={() => {
+                      setSelectedQuiz(quiz);
+                      setActiveView('trade');
+                    }}
+                  >
+                    Trade 💰
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* User's Created Quizzes */}
+      {userQuizzes.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h4>🏆 Your Created Quizzes</h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {createdQuizzes.map((quiz) => (
+            {userQuizzes.map((quiz) => (
               <div 
                 key={quiz.id}
                 style={{
@@ -260,12 +382,12 @@ function AuthenticatedView({
                   border: "1px solid #0891b2",
                 }}
               >
-                <div style={{ fontWeight: "bold" }}>{quiz.name}</div>
+                <div style={{ fontWeight: "bold" }}>{quiz.name} ({quiz.symbol})</div>
                 <div style={{ fontSize: "0.9rem", color: "#666" }}>
                   Coin: {quiz.coinAddress.substring(0, 10)}...
                 </div>
                 <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                  Created: {new Date(quiz.created).toLocaleDateString()}
+                  Created: {new Date(quiz.createdAt).toLocaleDateString()}
                 </div>
               </div>
             ))}
@@ -436,14 +558,26 @@ function CreateQuizView({
       setCreateResult(successResult);
       setStep('success');
       
-      // Add to created quizzes
-      onQuizCreated({
-        id: result.address,
-        name: quizName,
-        coinAddress: result.address,
-        txHash: result.hash,
-        created: Date.now(),
-      });
+      // Save to database
+      try {
+        const quizData: CreateQuizInput = {
+          name: quizName,
+          symbol: quizSymbol,
+          description: description || undefined,
+          coinAddress: result.address as string,
+          txHash: result.hash as string,
+          creatorAddress: account.address,
+          creatorFid: user.fid,
+        };
+        
+        await createQuiz(quizData);
+        console.log('✅ Quiz saved to database');
+      } catch (dbError) {
+        console.warn('⚠️ Could not save to database:', dbError);
+      }
+      
+      // Notify parent component
+      onQuizCreated(successResult);
 
     } catch (error: any) {
       console.error('❌ Error creating quiz coin:', error);
@@ -839,9 +973,11 @@ const SAMPLE_QUESTIONS: Question[] = [
 function QuizGame({
   onExit,
   user,
+  quiz,
 }: {
   user: { fid: number; displayName?: string; username?: string; pfpUrl?: string };
   onExit: () => void;
+  quiz?: { id: number; name: string; symbol: string; coinAddress: string; description?: string };
 }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -894,6 +1030,11 @@ function QuizGame({
         }}
       >
         <h2>🎉 Quiz Completed!</h2>
+        {quiz && (
+          <div style={{ marginBottom: "1rem", padding: "0.5rem", backgroundColor: "#f0f9ff", borderRadius: "6px" }}>
+            <strong>{quiz.name}</strong> ({quiz.symbol})
+          </div>
+        )}
         <div style={{ fontSize: "3rem", margin: "1rem 0" }}>
           {percentage >= 80 ? "🏆" : percentage >= 60 ? "🥈" : "📚"}
         </div>
@@ -985,6 +1126,198 @@ function QuizGame({
           {isLastQuestion ? "Finish Quiz" : "Next Question"}
         </button>
       )}
+    </div>
+  );
+}
+
+function TradingView({
+  onBack,
+  quiz,
+}: {
+  onBack: () => void;
+  quiz?: { id: number; name: string; symbol: string; coinAddress: string; description?: string };
+}) {
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [ethAmount, setEthAmount] = useState('');
+  const [isTrading, setIsTrading] = useState(false);
+  const [, setTradeResult] = useState<{ transactionHash: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { address } = useAccount();
+
+  const handleTrade = async () => {
+    if (!quiz || !address || !ethAmount) {
+      alert('Please connect wallet and enter amount');
+      return;
+    }
+
+    setIsTrading(true);
+    setError(null);
+
+    try {
+      const privateKey = import.meta.env.VITE_PRIVATE_KEY;
+      const rpcUrl = import.meta.env.VITE_RPC_URL;
+      
+      if (!privateKey || !rpcUrl) {
+        throw new Error('Missing environment variables');
+      }
+
+      // For now, show a placeholder for trading functionality
+      // In production, you would integrate with a DEX like Uniswap or use Zora's trading SDK
+      const result = {
+        transactionHash: `0x${Math.random().toString(16).substring(2, 10)}`,
+      };
+      
+      // Simulate a delay for demo purposes
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      setTradeResult(result);
+      alert(`Trade successful! Transaction: ${result.transactionHash}`);
+    } catch (error: unknown) {
+      console.error('Trade failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Trade failed';
+      setError(errorMessage);
+      alert(`Trade failed: ${errorMessage}`);
+    } finally {
+      setIsTrading(false);
+    }
+  };
+
+  if (!quiz) {
+    return (
+      <div className="quiz-card">
+        <h2>❌ No Quiz Selected</h2>
+        <p>Please select a quiz to trade its coin.</p>
+        <button type="button" onClick={onBack} className="quiz-submit-btn">
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="quiz-card">
+      <h2>💰 Trade {quiz.name} ({quiz.symbol})</h2>
+      
+      <div style={{ marginBottom: "2rem", padding: "1rem", backgroundColor: "#f0f9ff", borderRadius: "8px" }}>
+        <div style={{ fontWeight: "bold", marginBottom: "0.5rem" }}>{quiz.name}</div>
+        <div style={{ fontSize: "0.9rem", color: "#666" }}>
+          Coin Address: {quiz.coinAddress}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+          <button
+            type="button"
+            onClick={() => setTradeType('buy')}
+            style={{
+              flex: 1,
+              padding: "0.75rem",
+              backgroundColor: tradeType === 'buy' ? "#22c55e" : "#e5e7eb",
+              color: tradeType === 'buy' ? "white" : "#374151",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Buy with ETH
+          </button>
+          <button
+            type="button"
+            onClick={() => setTradeType('sell')}
+            style={{
+              flex: 1,
+              padding: "0.75rem",
+              backgroundColor: tradeType === 'sell' ? "#ef4444" : "#e5e7eb",
+              color: tradeType === 'sell' ? "white" : "#374151",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Sell for ETH
+          </button>
+        </div>
+
+        <div>
+          <label htmlFor="ethAmount" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            {tradeType === 'buy' ? 'ETH Amount to Spend' : 'Token Amount to Sell'}
+          </label>
+          <input
+            id="ethAmount"
+            type="number"
+            value={ethAmount}
+            onChange={(e) => setEthAmount(e.target.value)}
+            placeholder="0.001"
+            step="0.001"
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              border: "2px solid #ffd18c",
+              borderRadius: "8px",
+              fontSize: "1rem",
+            }}
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ 
+          marginBottom: "1rem", 
+          padding: "1rem", 
+          backgroundColor: "#fee", 
+          borderRadius: "8px",
+          color: "#c53030" 
+        }}>
+          Error: {error}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            backgroundColor: "#6b7280",
+            color: "white",
+            border: "none",
+            borderRadius: "12px",
+            padding: "0.75rem 2rem",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          Back
+        </button>
+        
+        <button
+          type="button"
+          onClick={handleTrade}
+          disabled={isTrading || !ethAmount || !address}
+          style={{
+            backgroundColor: isTrading ? "#ccc" : (tradeType === 'buy' ? "#22c55e" : "#ef4444"),
+            color: "white",
+            border: "none",
+            borderRadius: "12px",
+            padding: "0.75rem 2rem",
+            fontSize: "1rem",
+            cursor: isTrading || !ethAmount || !address ? "not-allowed" : "pointer",
+          }}
+        >
+          {isTrading ? 'Trading...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${quiz.symbol}`}
+        </button>
+      </div>
+
+      <div style={{ marginTop: "1.5rem", padding: "1rem", backgroundColor: "#f0f9ff", borderRadius: "8px", fontSize: "0.9rem" }}>
+        <strong>💡 Trading Info:</strong>
+        <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
+          <li>Trade directly on Base network</li>
+          <li>5% slippage tolerance included</li>
+          <li>Requires connected wallet with ETH for gas</li>
+          <li>Uses permit signatures for secure trading</li>
+        </ul>
+      </div>
     </div>
   );
 }

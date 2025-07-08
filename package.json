@@ -11,29 +11,39 @@
     "lint": "biome check src",
     "preview": "vite preview",
     "create-coin": "tsx scripts/create-coin.ts",
-    "get-coins": "tsx scripts/profile-queries.ts"
+    "get-coins": "tsx scripts/profile-queries.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@farcaster/frame-sdk": "latest",
     "@farcaster/frame-wagmi-connector": "latest",
     "@tanstack/react-query": "5.45.1",
+    "@uniswap/sdk-core": "^7.7.2",
+    "@uniswap/universal-router-sdk": "^4.19.6",
+    "@uniswap/v4-sdk": "^1.21.4",
     "@wagmi/core": "^2.17.3",
-    "@zoralabs/coins-sdk": "^0.2.4",
+    "@zoralabs/coins-sdk": "^0.2.8",
     "dotenv": "^17.0.0",
+    "drizzle-orm": "^0.44.2",
     "ethers": "^6.15.0",
+    "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tsx": "^4.7.0",
     "viem": "^2.31.3",
-    "wagmi": "latest"
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.8.0",
     "@types/node": "^24.0.7",
+    "@types/pg": "^8.15.4",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.2.1",
     "@wagmi/cli": "latest",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.4.5",
     "vite": "^5.2.11"
   }
