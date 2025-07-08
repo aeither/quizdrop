@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "ngrok": "ngrok http --domain=basically-enough-clam.ngrok-free.app 5174",
+    "ngrok": "ngrok http --domain=basically-enough-clam.ngrok-free.app 5173",
     "build": "tsc && vite build",
     "lint": "biome check src",
     "preview": "vite preview",
