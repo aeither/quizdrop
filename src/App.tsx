@@ -1,10 +1,10 @@
 import { sdk } from "@farcaster/frame-sdk";
+import { DeployCurrency, createCoin, setApiKey } from '@zoralabs/coins-sdk';
 import { useEffect, useState } from "react";
-import { useAccount, useConnect, useSignMessage, useWalletClient, usePublicClient } from "wagmi";
-import { createPublicClient, createWalletClient, http, Hex, Address, isAddress } from "viem";
-import { base } from "viem/chains";
+import { createPublicClient, createWalletClient, http, isAddress, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { setApiKey, createCoin, DeployCurrency } from '@zoralabs/coins-sdk';
+import { base } from "viem/chains";
+import { useAccount, useConnect } from "wagmi";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,6 @@ function App() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, textAlign: "center" }}>
         <h1>🎯 QuizDrop</h1>
-        <p>Interactive Quiz Mini App</p>
         {user ? <AuthenticatedView user={user} token={authToken} /> : <AuthenticationPrompt onAuth={setUser} />}
       </div>
       {user && <ConnectMenu />}
