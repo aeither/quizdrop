@@ -1,11 +1,11 @@
 import { sdk } from "@farcaster/frame-sdk";
-import { DeployCurrency, createCoin, setApiKey, tradeCoin, type TradeParameters } from '@zoralabs/coins-sdk';
+import { DeployCurrency, type TradeParameters, createCoin, setApiKey, tradeCoin } from '@zoralabs/coins-sdk';
 import { useEffect, useState } from "react";
 import { type Address, type Hex, createPublicClient, createWalletClient, http, isAddress, parseEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { useAccount, useConnect, usePublicClient, useWalletClient } from "wagmi";
-import { getAllQuizzes, getQuizzesByCreatorFid, createQuiz, type CreateQuizInput } from "./db/mock-operations";
+import { type CreateQuizInput, createQuiz, getAllQuizzes, getQuizzesByCreatorFid } from "./db/mock-operations";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);

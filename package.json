@@ -24,7 +24,7 @@
     "@uniswap/universal-router-sdk": "^4.19.6",
     "@uniswap/v4-sdk": "^1.21.4",
     "@wagmi/core": "^2.17.3",
-    "@zoralabs/coins-sdk": "^0.2.8",
+    "@zoralabs/coins-sdk": "^0.2.4",
     "dotenv": "^17.0.0",
     "drizzle-orm": "^0.44.2",
     "ethers": "5",
