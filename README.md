@@ -1,106 +1,174 @@
 # 🎯 QuizDrop
 
-Interactive quiz mini-app for Farcaster with real ERC-20 coin creation, trading, and liquidity provisioning on Base network.
+Interactive quiz mini-app for **Farcaster** that creates **real ERC-20 coins** using Zora's Coins SDK and enables trading on Base network.
 
-## ✨ Features
+## ✨ Key Features
 
-- **🎮 Interactive Quizzes**: Take sample quizzes with real-time feedback
-- **🪙 Coin Creation**: Create actual ERC-20 tokens using Zora's coins SDK
-- **💧 Liquidity Pools**: Add liquidity to Uniswap V4 pools for your quiz coins
-- **🔄 Token Trading**: Swap ETH for quiz coins and vice versa
-- **🗃️ Database Storage**: Persistent storage with PostgreSQL via Drizzle ORM
-- **🔐 Farcaster Auth**: Seamless authentication with Farcaster accounts
-- **💳 Wallet Integration**: Connect with popular Web3 wallets via Wagmi
-- **🌐 Base Network**: Built for Coinbase's Base Layer 2
+- **🎮 Quiz & Earn**: Take quizzes and interact with creator coins
+- **🪙 Real Coin Creation**: Deploy actual ERC-20 tokens via Zora Coins SDK  
+- **🔄 Live Trading**: Buy/sell quiz coins with ETH using Zora's trading infrastructure
+- **🔐 Farcaster Native**: Seamless auth and user management via Farcaster Frame SDK
+- **🌐 Base Network**: Built for Coinbase's L2 with optimized gas costs
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js 18+ and pnpm
-- Farcaster account
-- Base network wallet with ETH for gas fees
-- Railway PostgreSQL database (or local PostgreSQL)
+- Farcaster account  
+- Base network wallet with ETH
+- [Zora API key](https://docs.zora.co/docs/zora-network/api)
 
-### 1. Install Dependencies
+### Setup
 
 ```bash
-# Core dependencies
-pnpm add drizzle-orm pg dotenv wagmi viem@2.x @tanstack/react-query
-pnpm add -D drizzle-kit tsx @types/pg
+# Install dependencies
+pnpm install
 
-# Uniswap V4 & Zora integration
-pnpm add @uniswap/v4-sdk @uniswap/sdk-core @uniswap/universal-router-sdk @zoralabs/coins-sdk
+# Environment setup
+cp .env.example .env.local
 ```
 
-### 2. Environment Setup
-
-Create `.env.local` with your configuration:
-
+**Required Environment Variables:**
 ```env
-# Database
-DATABASE_URL=postgresql://postgres:password@host:port/database
-
-# Zora Coins SDK
+# Zora Coins SDK Integration
 VITE_ZORA_API_KEY=your_zora_api_key
 
-# Blockchain
+# Blockchain (Base Network)  
 VITE_PRIVATE_KEY=your_private_key_for_coin_creation
 VITE_RPC_URL=https://mainnet.base.org
 VITE_PAYOUT_RECIPIENT=0x_your_wallet_address
+
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://user:pass@host:port/db
 ```
 
-### 3. Database Setup
-
+### Run
 ```bash
-# Generate migration files
-pnpm db:generate
-
-# Push schema to database
-pnpm db:push
-
-# Initialize with sample data (optional)
-pnpm tsx scripts/init-database.ts
-
-# View database in browser (optional)
-pnpm db:studio
-```
-
-### 4. Development
-
-```bash
-# Start development server
+# Development
 pnpm dev
 
-# Create a test coin (optional)
-pnpm tsx scripts/create-coin.ts
+# Database setup  
+pnpm db:push
 
-# Test Uniswap V4 operations (optional)
-pnpm tsx scripts/uniswap-v4-operations.ts
+# Production build
+pnpm build
 ```
 
-## 🏗️ Architecture
+## 🏗️ Core Integrations
 
-### Database Schema (PostgreSQL + Drizzle ORM)
+### 🪙 Zora Coins SDK Integration
+
+**Real ERC-20 Coin Creation:**
+```typescript
+import { createCoin, DeployCurrency } from '@zoralabs/coins-sdk';
+
+// Create quiz coin on Base network
+const result = await createCoin(
+  {
+    name: "My Quiz Coin",
+    symbol: "QUIZ", 
+    uri: "ipfs://metadata-uri",
+    payoutRecipient: "0x...",
+    chainId: 8453, // Base
+    currency: DeployCurrency.ZORA
+  },
+  walletClient,
+  publicClient,
+  { gasMultiplier: 120 }
+);
+
+// Returns: { address, hash, deployment }
+```
+
+**Trading with Zora's Infrastructure:**
+```typescript
+import { tradeCoin, TradeParameters } from '@zoralabs/coins-sdk';
+
+// Buy quiz coin with ETH
+const tradeParams: TradeParameters = {
+  sell: { type: "eth" },
+  buy: { type: "erc20", address: quizCoinAddress },
+  amountIn: parseEther("0.001"), // 0.001 ETH
+  slippage: 0.05, // 5% tolerance
+  sender: userAddress,
+};
+
+const receipt = await tradeCoin({
+  tradeParameters: tradeParams,
+  walletClient,
+  account,
+  publicClient,
+});
+```
+
+**Key Features:**
+- ✅ **Real token deployment** on Base mainnet
+- ✅ **Gasless approvals** via permit signatures  
+- ✅ **Automatic routing** for optimal trades
+- ✅ **Slippage protection** and parameter validation
+- ✅ **Creator monetization** through trading fees
+
+### 🔐 Farcaster Frame SDK Integration
+
+**Authentication & User Management:**
+```typescript
+import { sdk } from "@farcaster/frame-sdk";
+
+// Initialize Farcaster context
+const context = await sdk.context;
+if (context.user) {
+  // Access user data: fid, displayName, username, pfpUrl
+  const { fid, displayName, pfpUrl } = context.user;
+  
+  // Get auth token
+  const { token } = await sdk.quickAuth.getToken();
+}
+
+// Sign in flow
+await sdk.actions.signIn({
+  nonce: crypto.randomUUID(),
+  acceptAuthAddress: true,
+});
+```
+
+**Frame-Ready Components:**
+```typescript
+// Frame lifecycle management
+useEffect(() => {
+  const initializeApp = async () => {
+    // App initialization logic
+    sdk.actions.ready(); // Signal frame is ready
+  };
+  initializeApp();
+}, []);
+```
+
+**Key Features:**
+- ✅ **One-click authentication** with Farcaster
+- ✅ **Profile integration** (FID, name, avatar)
+- ✅ **Token-based auth** for secure API calls
+- ✅ **Frame lifecycle** management
+- ✅ **Native UX** within Farcaster ecosystem
+
+## 📊 Database Schema
 
 ```sql
--- Deployed quiz coins
+-- Quiz coins storage
 CREATE TABLE quizzes (
     id SERIAL PRIMARY KEY,
     coin_address VARCHAR(42) UNIQUE NOT NULL,
     tx_hash VARCHAR(66) NOT NULL,
     name VARCHAR(100) NOT NULL,
     symbol VARCHAR(10) NOT NULL,
-    description TEXT,
     creator_address VARCHAR(42) NOT NULL,
-    creator_fid BIGINT,
+    creator_fid BIGINT, -- Farcaster user ID
     created_at TIMESTAMP DEFAULT now()
 );
 
--- Quiz questions (extensible)
+-- Extensible quiz questions
 CREATE TABLE quiz_questions (
     id SERIAL PRIMARY KEY,
-    quiz_id INTEGER REFERENCES quizzes(id) ON DELETE CASCADE,
+    quiz_id INTEGER REFERENCES quizzes(id),
     question TEXT NOT NULL,
     options TEXT[] NOT NULL,
     correct_idx INTEGER NOT NULL,
@@ -108,205 +176,95 @@ CREATE TABLE quiz_questions (
 );
 ```
 
-### Tech Stack
-
-- **Frontend**: React + TypeScript + Vite
-- **Web3**: Wagmi + Viem + Farcaster Frame SDK
-- **Database**: PostgreSQL + Drizzle ORM
-- **Blockchain**: Base Network (Coinbase Layer 2)
-- **Coins**: Zora Coins SDK
-- **Trading**: Uniswap V4 SDK
-- **Styling**: Inline styles with modern design
-
-## 📁 Project Structure
-
-```
-quizdrop/
-├── src/
-│   ├── App.tsx                 # Main application component
-│   ├── db/
-│   │   ├── schema.ts           # Drizzle schema definitions
-│   │   └── operations.ts       # Database CRUD operations
-│   ├── main.tsx                # React entry point
-│   └── wagmi.ts                # Wagmi configuration
-├── scripts/
-│   ├── create-coin.ts          # Coin creation utility
-│   ├── init-database.ts        # Database initialization
-│   ├── uniswap-v4-operations.ts # Trading & liquidity operations
-│   └── viem-to-ethers.ts       # Viem/Ethers utilities
-├── drizzle/                    # Migration files
-├── drizzle.config.ts           # Drizzle configuration
-└── package.json                # Dependencies & scripts
-```
-
 ## 🛠️ Key Scripts
 
-### Database Operations
+```bash
+# Database operations
+pnpm db:generate      # Generate migrations
+pnpm db:push         # Push schema to database  
+pnpm db:studio       # Open database browser
 
-```typescript
-// Create a new quiz in database
-import { createQuiz } from './src/db/operations';
+# Coin utilities
+pnpm create-coin     # Create test coin via Zora SDK
+pnpm get-coins       # Query coin balances
 
-const quiz = await createQuiz({
-  coinAddress: '0x...',
-  txHash: '0x...',
-  name: 'My Quiz',
-  symbol: 'QUIZ',
-  description: 'A great quiz about...',
-  creatorAddress: '0x...',
-  creatorFid: 12345,
-});
+# Development
+pnpm dev            # Start dev server with ngrok
+pnpm ngrok          # Expose local server for Farcaster testing
 ```
 
-### Uniswap V4 Trading
+## 🔧 Tech Stack
 
-```typescript
-// Create Zora coin + add liquidity
-import { createZoraQuizCoin, createInitialLiquidity } from './scripts/uniswap-v4-operations';
+- **Frontend**: React + TypeScript + Vite
+- **Web3**: Wagmi + Viem for Base network integration
+- **Coins**: Zora Coins SDK for token creation and trading
+- **Auth**: Farcaster Frame SDK for user management  
+- **Database**: PostgreSQL + Drizzle ORM
+- **Network**: Base (Coinbase L2) for low-cost transactions
 
-// 1. Create coin
-const coin = await createZoraQuizCoin('My Quiz Coin', 'QUIZ');
+## 🌐 Production Deployment
 
-// 2. Add liquidity
-const liquidityTx = await createInitialLiquidity(
-  coin.coinAddress,
-  '0.01', // 0.01 ETH
-  0.05    // 5% slippage
-);
+**Environment Setup:**
+- Base mainnet RPC endpoint
+- PostgreSQL database (Railway recommended)
+- Zora API key with appropriate limits
+- Secure private key management
+- ngrok domain for Farcaster Frame hosting
 
-// 3. Trade tokens
-const swapTx = await swapETHForQuizCoin(
-  coin.coinAddress,
-  '0.001', // 0.001 ETH
-  '0'      // Min tokens out
-);
-```
+**Security Considerations:**
+- Private keys in environment variables only
+- Input validation for all user data  
+- Rate limiting for coin creation endpoints
+- Transaction validation and error handling
 
-## 🗄️ Database Operations
+## 🏆 Zora Coins Implementation
 
-### Basic Queries
+### How We Used Zora Coins
 
-```typescript
-// Get all quizzes
-const allQuizzes = await getAllQuizzes();
+**Core Integration:**
+QuizDrop leverages Zora Coins SDK for two primary functions:
 
-// Get user's quizzes
-const userQuizzes = await getQuizzesByCreatorFid(fid);
+1. **Quiz Coin Creation**: When users create a quiz, we deploy a real ERC-20 token using `createCoin()` that represents their quiz. Each quiz becomes a tradeable creator coin on Base network.
 
-// Get quiz by coin address
-const quiz = await getQuizByCoinAddress('0x...');
+2. **Live Trading System**: Users can buy/sell quiz coins with ETH using Zora's `tradeCoin()` function, creating a marketplace where successful quiz creators can monetize their content through coin appreciation.
 
-// Database statistics
-const stats = await getQuizStats();
-```
+**Technical Implementation:**
+- **Real Token Deployment**: Creates actual ERC-20 contracts (not mock tokens) 
+- **Gasless Trading**: Uses permit signatures for seamless user experience
+- **Creator Monetization**: Quiz creators earn from trading fees automatically
+- **Farcaster Integration**: Links coins to Farcaster user profiles (FID) for social discovery
 
-### Adding Questions
+**Business Model**: Transforms educational content into tradeable assets, allowing creators to build sustainable quiz businesses through coin mechanics.
 
-```typescript
-// Add questions to a quiz
-await createMultipleQuizQuestions(quizId, [
-  {
-    question: "What is Base?",
-    options: ["Layer 1", "Layer 2", "Sidechain"],
-    correctIdx: 1,
-    explanation: "Base is a Layer 2 blockchain built on Ethereum"
-  }
-]);
-```
+### Technology Feedback & Experience
 
-## 🎯 Core Features
+**✅ Zora Coins SDK - Excellent**
+- **Documentation**: Comprehensive with clear examples for both coin creation and trading
+- **Developer Experience**: Intuitive API design, TypeScript support is excellent
+- **Reliability**: Consistent performance on Base mainnet, gas optimization works well
+- **Integration**: Seamless with existing Web3 stack (Wagmi/Viem)
 
-### 1. Quiz Creation & Coin Deployment
-- Create interactive quizzes with custom questions
-- Deploy real ERC-20 tokens using Zora's infrastructure
-- Store quiz metadata in PostgreSQL database
-- Track creators via Farcaster ID
+**✅ Farcaster Frame SDK - Outstanding**  
+- **Authentication**: One-click auth flow is incredibly smooth
+- **User Context**: Rich profile data (FID, username, avatar) readily available
+- **Frame Lifecycle**: Clear state management for Frame readiness
+- **Social Integration**: Natural fit for creator coin mechanics
 
-### 2. Trading & Liquidity
-- **Swap tokens**: ETH ↔ Quiz Coins via Uniswap V4
-- **Add liquidity**: Create trading pairs for quiz coins
-- **Price quotes**: Get real-time trading quotes
-- **Position management**: Mint/manage liquidity positions
+**🔧 Areas for Future Improvement**
+- **Zora SDK**: More granular fee configuration options for different creator tiers
+- **Trading**: Additional token pair support beyond ETH (USDC, ZORA)
+- **Analytics**: Built-in trading metrics and creator dashboard APIs
+- **Mobile**: Enhanced mobile wallet connection experience
 
-### 3. User Experience
-- **Farcaster auth**: One-click authentication
-- **Wallet integration**: Connect popular Web3 wallets
-- **Real-time feedback**: Instant quiz results and explanations
-- **Responsive design**: Works on mobile and desktop
+**Overall Assessment**: Both SDKs are production-ready with excellent documentation. The combination creates a powerful foundation for social-finance applications in the Farcaster ecosystem.
 
-## 🔧 Advanced Configuration
+## 📖 Documentation
 
-### Custom RPC Endpoints
-
-```env
-# Use custom Base RPC for better performance
-VITE_RPC_URL=https://your-custom-base-rpc-endpoint.com
-```
-
-### Trading Configuration
-
-```typescript
-// Custom fee tiers and slippage
-const tradingConfig = {
-  fee: 500,              // 0.05% fee tier
-  slippageTolerance: 0.05, // 5% slippage
-  tickSpacing: 10,       // Standard tick spacing
-};
-```
-
-### Database Connection Pooling
-
-```typescript
-// Custom pool configuration
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,                // Max connections
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-```
-
-## 🚨 Production Considerations
-
-### Security
-- ✅ Private keys in environment variables only
-- ✅ Input validation for all user data
-- ✅ SQL injection protection via Drizzle ORM
-- ✅ Rate limiting for API endpoints (implement as needed)
-
-### Performance
-- ✅ Database connection pooling
-- ✅ Efficient queries with proper indexing
-- ✅ Lazy loading for large datasets
-- ✅ Optimized bundle size
-
-### Monitoring
-- 📊 Database query performance
-- 📊 Transaction success rates
-- 📊 User engagement metrics
-- 📊 Error tracking and alerts
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-## 📜 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- [Farcaster Documentation](https://docs.farcaster.xyz/)
-- [Zora Coins SDK](https://github.com/ourzora/zora-protocol)
-- [Uniswap V4 Documentation](https://docs.uniswap.org/contracts/v4/overview)
-- [Base Network](https://base.org/)
-- [Drizzle ORM](https://orm.drizzle.team/)
-- [Wagmi Documentation](https://wagmi.sh/)
+- [Zora Coins SDK Docs](https://docs.zora.co/docs/smart-contracts/creator-tools/collect-premints)
+- [Farcaster Frame Docs](https://docs.farcaster.xyz/developers/frames/spec)
+- [Base Network Docs](https://docs.base.org/)
+- [Wagmi Docs](https://wagmi.sh/)
 
 ---
 
-**Built with ❤️ for the Farcaster ecosystem**
+**Built for the Farcaster ecosystem with real Web3 functionality** 🚀
