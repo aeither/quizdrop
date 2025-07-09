@@ -5,7 +5,7 @@
 
 "Hi everyone! I'm excited to present QuizDrop - a Farcaster mini-app that transforms how we think about quiz platforms by creating real economic value for knowledge sharing.
 
-In just 30 seconds: QuizDrop lets you create quizzes that deploy actual ERC-20 tokens on Base network. Players earn real cryptocurrency by participating, creating the first quiz platform with genuine economic incentives."
+In just 30 seconds: QuizDrop lets you create quizzes that deploy actual Zora Coins on Base network. Players earn real cryptocurrency by participating, creating the first quiz platform with genuine economic incentives."
 
 ## The Problem (30 seconds)
 
@@ -23,11 +23,11 @@ We needed a solution that creates lasting economic incentives for both quiz crea
 
 "QuizDrop solves this by combining three key innovations:
 
-**1. Real Economic Value**: Every quiz creates an actual ERC-20 token using Zora's Coins SDK. Players earn real cryptocurrency, not worthless points.
+**1. Real Economic Value**: Every quiz creates an actual Zora Coin using Zora's Coins SDK. Players earn real cryptocurrency, not worthless points.
 
 **2. Farcaster-Native Experience**: Built as a mini-app within Farcaster's social ecosystem, enabling viral sharing and social verification of achievements.
 
-**3. Automated Market Making**: Integration with Uniswap V4 (currently in development) will enable automatic token trading and liquidity provision.
+**3. Automated Market Making**: Integration with Uniswap V4 (currently in development) will enable automatic coin trading and liquidity provision.
 
 This creates a sustainable economic loop: knowledge sharing generates real value, incentivizing quality content and active participation."
 
@@ -37,7 +37,7 @@ This creates a sustainable economic loop: knowledge sharing generates real value
 
 **Frontend**: React + TypeScript as a Farcaster Frame for seamless social integration
 **Blockchain**: Base network for fast, affordable transactions
-**Token Creation**: Zora's Coins SDK for one-click ERC-20 deployment
+**Coin Creation**: Zora's Coins SDK for one-click Zora Coin deployment
 **Database**: PostgreSQL with Drizzle ORM for quiz metadata and analytics
 **Trading**: Uniswap V4 integration (work-in-progress) for automated liquidity"
 
@@ -57,13 +57,13 @@ Now I'll create a new quiz called 'Base Network Basics' with token symbol 'BASE'
 - Description: 'Test your knowledge about Coinbase's Layer 2'
 
 When I click 'Create Quiz', watch what happens:
-1. Zora's Coins SDK deploys a new ERC-20 token to Base network
+1. Zora's Coins SDK deploys a new Zora Coin to Base network
 2. Quiz metadata is stored in our PostgreSQL database
-3. Token address is linked to the quiz for reward distribution
+3. Coin address is linked to the quiz for reward distribution
 
 *[Show transaction confirmation]*
 
-Perfect! Our quiz token is now live and verifiable on Basescan. The entire process took under 10 seconds."
+Perfect! Our quiz coin is now live and verifiable on Basescan. The entire process took under 10 seconds."
 
 ## Live Demo - Taking the Quiz (60 seconds)
 
@@ -78,9 +78,9 @@ Here are sample questions about Base network:
 
 *[Answer questions correctly]*
 
-Excellent! 3 out of 3 correct answers. In our production version, I would now automatically receive BASE tokens as rewards.
+Excellent! 3 out of 3 correct answers. In our production version, I would now automatically receive BASE coins as rewards.
 
-The smart contract integration ensures transparent, automatic token distribution with no manual intervention required."
+The smart contract integration ensures transparent, automatic coin distribution with no manual intervention required."
 
 ## Current Status & Future Features (75 seconds)
 
@@ -89,9 +89,9 @@ The smart contract integration ensures transparent, automatic token distribution
 **Currently Live**:
 - ✅ Farcaster Frame integration with seamless authentication
 - ✅ Quiz creation and management system
-- ✅ ERC-20 token deployment via Zora Coins SDK
+- ✅ Zora Coin deployment via Zora Coins SDK
 - ✅ PostgreSQL database for persistence and analytics
-- ✅ Token reward mechanics
+- ✅ Coin reward mechanics
 
 **Work in Progress**:
 - 🔄 Uniswap V4 integration for automated trading (SDK compatibility updates)
@@ -99,19 +99,19 @@ The smart contract integration ensures transparent, automatic token distribution
 - 🔄 Leaderboards and social sharing features
 
 **Coming Soon**:
-- 🚀 Automated liquidity pool creation for every quiz token
-- 🚀 Token-gated quiz access (hold X tokens to participate)
+- 🚀 Automated liquidity pool creation for every quiz coin
+- 🚀 Coin-gated quiz access (hold X coins to participate)
 - 🚀 Creator analytics dashboard with revenue tracking
 - 🚀 Cross-chain deployment (Ethereum mainnet, Polygon)
 
-The Uniswap V4 integration is our biggest upcoming feature - it will enable immediate trading of quiz tokens, creating real market value from day one."
+The Uniswap V4 integration is our biggest upcoming feature - it will enable immediate trading of quiz coins, creating real market value from day one."
 
 ## Impact & Applications (45 seconds)
 
 "QuizDrop enables entirely new use cases:
 
-**Education**: Teachers monetize knowledge through tradeable quiz tokens
-**DAOs**: Community engagement with governance token rewards
+**Education**: Teachers monetize knowledge through tradeable quiz coins
+**DAOs**: Community engagement with governance coin rewards
 **Content Creators**: Monetize expertise through quiz-based micro-economies
 **Corporate Training**: Employee incentivization with real economic rewards
 **Social Learning**: Farcaster communities built around knowledge sharing
@@ -153,9 +153,9 @@ Thank you! The project is open-source on GitHub, and I'm happy to answer questio
 
 1. **Title Slide**: QuizDrop - Real Economic Value for Knowledge Sharing
 2. **Problem**: Traditional quiz platforms offer meaningless rewards
-3. **Solution**: ERC-20 tokens + Farcaster + automated trading
+3. **Solution**: Zora Coins + Farcaster + automated trading
 4. **Architecture**: Tech stack diagram showing integrations
-5. **Demo Screenshots**: Quiz creation and token deployment process
+5. **Demo Screenshots**: Quiz creation and coin deployment process
 6. **Current Status**: What's live vs. what's coming
 7. **Impact**: Use cases across education, DAOs, content creation
 8. **Technical Innovation**: Key achievements and open source nature
